@@ -31,14 +31,23 @@ private:
     int sockt;
     bool *run;
     std::string command;
+    char buffer[1];
     std::string userInput;
+    std::string data;
+
 
 
     int ParseCommand(std::string command);
+
+    // commands
     void InvalidCommand();
     void UserCommand();
+    void AcctCommand();
+    void PassCommand();
 
     void SplitString(std::vector<std::string> &vector, std::string inputString);
+
+
 };
 
 enum Commands {

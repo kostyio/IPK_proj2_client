@@ -2,6 +2,7 @@
 // Created by kostyo on 22.04.21.
 //
 
+#include <cstring>
 #include "client_command_processor.h"
 
 client_command_processor::client_command_processor(int socket, bool *running) {
@@ -24,8 +25,11 @@ void client_command_processor::Process() {
             this->UserCommand();
             break;
         case ACCT:
+            this->user=false;
+            this->AcctCommand();
             break;
         case PASS:
+            this->passwd = false;
             break;
         case TYPE:
             break;
@@ -61,7 +65,7 @@ void client_command_processor::UserCommand() {
     std::vector<std::string> vec;
     this->SplitString(vec, comm);
 
-    if (vec.size() !=1){
+    if (vec.size() != 1) {
         this->InvalidCommand();
         return;
     }
@@ -69,18 +73,81 @@ void client_command_processor::UserCommand() {
     vec[0].insert(0, "USER ");
     //vec[0].push_back('\r');
     vec[0].push_back('\n');
-    std::cout << vec[0]<< std::endl;
+    //std::cout << vec[0] << std::endl;
     if ((send(this->sockt, vec[0].data(), vec[0].size(), 0)) < 0) {
         std::cerr << "ERROR: UserCommand" << std::endl;
         close(this->sockt);
         exit(EXIT_FAILURE);
     }
 
+    this->data.clear();
+    memset(this->buffer, 0, 1);
+    int received;
+
+    while ((received = recv(this->sockt, &this->buffer, 1, 0)) > 0) {
+        if (received < 0) {
+            std::cerr << "ERROR: receive" << std::endl;
+            close(this->sockt);
+            exit(EXIT_FAILURE);
+        }
+        if (*this->buffer == '\n') {
+            break;
+        }
+        data.append(this->buffer);
+    }
+    this->data.append("\n");
+    std::cout << this->data;
+}
 
 
+void client_command_processor::AcctCommand() {
+
+    std::string comm = this->userInput;
+    comm.erase(0, 5);
+    //std::cout << this->userInput << std::endl << comm;
+
+    std::vector<std::string> vec;
+    this->SplitString(vec, comm);
+
+    if (vec.size() != 1) {
+        this->InvalidCommand();
+        return;
+    }
+
+    vec[0].insert(0, "ACCT ");
+    //vec[0].push_back('\r');
+    vec[0].push_back('\n');
+    //std::cout << vec[0] << std::endl;
+    if ((send(this->sockt, vec[0].data(), vec[0].size(), 0)) < 0) {
+        std::cerr << "ERROR: AcctCommand" << std::endl;
+        close(this->sockt);
+        exit(EXIT_FAILURE);
+    }
+
+    this->data.clear();
+    memset(this->buffer, 0, 1);
+    int received;
+
+    while ((received = recv(this->sockt, &this->buffer, 1, 0)) > 0) {
+        if (received < 0) {
+            std::cerr << "ERROR: receive" << std::endl;
+            close(this->sockt);
+            exit(EXIT_FAILURE);
+        }
+        if (*this->buffer == '\n') {
+            break;
+        }
+        data.append(this->buffer);
+    }
+    this->data.append("\n");
+    std::cout << this->data;
 
 }
 
+void client_command_processor::PassCommand() {
+
+
+}
 
 void client_command_processor::InvalidCommand() {
 
@@ -88,6 +155,7 @@ void client_command_processor::InvalidCommand() {
     return;
 
 }
+
 
 void client_command_processor::SplitString(std::vector<std::string> &vector, std::string inputString) {
 
