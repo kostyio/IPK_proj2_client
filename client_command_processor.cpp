@@ -11,6 +11,8 @@ client_command_processor::client_command_processor(int socket, bool *running) {
 
 }
 
+client_command_processor::~client_command_processor() {};
+
 void client_command_processor::Process() {
 
     std::cout << "Enter command: ";
@@ -18,30 +20,31 @@ void client_command_processor::Process() {
     std::getline(std::cin, this->userInput);
     this->command = this->userInput.substr(0, 4);
     //this->userInput.erase(0, 5);
-    //std::cout << "Command: " << this->userInput << std::endl;
+    //std::cout << "Command: " << this->userInput.size() << std::endl;
 
     switch (this->ParseCommand(this->command)) {
         case USER:
             this->UserCommand();
             break;
         case ACCT:
-            this->user=false;
             this->AcctCommand();
             break;
         case PASS:
-            this->passwd = false;
+            this->PassCommand();
             break;
         case TYPE:
             break;
         case LIST:
             break;
         case CDIR:
+            this->CdirCommand();
             break;
         case KILL:
             break;
         case NAME:
             break;
         case DONE:
+            this->DoneCommand();
             break;
         case RETR:
             break;
@@ -95,6 +98,9 @@ void client_command_processor::UserCommand() {
         }
         data.append(this->buffer);
     }
+    if (this->data.size() == 0){
+        this->ShutDown();
+    }
     this->data.append("\n");
     std::cout << this->data;
 }
@@ -139,14 +145,148 @@ void client_command_processor::AcctCommand() {
         }
         data.append(this->buffer);
     }
+    if (this->data.size() == 0){
+        this->ShutDown();
+    }
     this->data.append("\n");
     std::cout << this->data;
 
 }
 
 void client_command_processor::PassCommand() {
+    std::string comm = this->userInput;
+    comm.erase(0, 5);
+    //std::cout << this->userInput << std::endl << comm;
+
+    std::vector<std::string> vec;
+    this->SplitString(vec, comm);
+
+    if (vec.size() != 1) {
+        this->InvalidCommand();
+        return;
+    }
+
+    vec[0].insert(0, "PASS ");
+    //vec[0].push_back('\r');
+    vec[0].push_back('\n');
+    //std::cout << vec[0] << std::endl;
+    if ((send(this->sockt, vec[0].data(), vec[0].size(), 0)) < 0) {
+        std::cerr << "ERROR: PassCommand" << std::endl;
+        close(this->sockt);
+        exit(EXIT_FAILURE);
+    }
+
+    this->data.clear();
+    memset(this->buffer, 0, 1);
+    int received;
+
+    while ((received = recv(this->sockt, &this->buffer, 1, 0)) > 0) {
+        if (received < 0) {
+            std::cerr << "ERROR: receive" << std::endl;
+            close(this->sockt);
+            exit(EXIT_FAILURE);
+        }
+        if (*this->buffer == '\n') {
+            break;
+        }
+        data.append(this->buffer);
+    }
+
+    if (this->data.size() == 0){
+        this->ShutDown();
+    }
+    this->data.append("\n");
+    std::cout << this->data;
+
+}
+
+void client_command_processor::CdirCommand() {
+    std::string comm = this->userInput;
+    comm.erase(0, 5);
+    //std::cout << this->userInput << std::endl << comm;
+
+    std::vector<std::string> vec;
+    this->SplitString(vec, comm);
+
+    if (vec.size() != 1) {
+        this->InvalidCommand();
+        return;
+    }
+
+    vec[0].insert(0, "CDIR ");
+    //vec[0].push_back('\r');
+    vec[0].push_back('\n');
+    //std::cout << vec[0] << std::endl;
+    if ((send(this->sockt, vec[0].data(), vec[0].size(), 0)) < 0) {
+        std::cerr << "ERROR: AcctCommand" << std::endl;
+        close(this->sockt);
+        exit(EXIT_FAILURE);
+    }
+
+    this->data.clear();
+    memset(this->buffer, 0, 1);
+    int received;
+
+    while ((received = recv(this->sockt, &this->buffer, 1, 0)) > 0) {
+        if (received < 0) {
+            std::cerr << "ERROR: receive" << std::endl;
+            close(this->sockt);
+            exit(EXIT_FAILURE);
+        }
+        if (*this->buffer == '\n') {
+            break;
+        }
+        data.append(this->buffer);
+    }
+    if (this->data.size() == 0){
+        this->ShutDown();
+    }
+    this->data.append("\n");
+    std::cout << this->data;
+    if (this->data.substr(0,1) == "!"){
+        return;
+    } else if (this->data.substr(0,1) == "+"){
+
+    } else if(this->data.substr(0,1) == "-"){
+
+    }
+
+}
+
+void client_command_processor::DoneCommand() {
+
+    std::string comm = this->userInput;
+    comm.erase(0, 5);
 
 
+    //this->SplitString(vec, comm);
+
+    if (comm.size() != 0) {
+        this->InvalidCommand();
+        return;
+    }
+
+    comm.insert(0, "DONE\n");
+
+    if ((send(this->sockt, comm.data(), comm.size(), 0)) < 0) {
+        std::cerr << "ERROR: PassCommand" << std::endl;
+        close(this->sockt);
+        exit(EXIT_FAILURE);
+    }
+
+
+    this->data.clear();
+    this->userInput.clear();
+    *this->run = false;
+
+}
+
+
+void client_command_processor::ShutDown() {
+    std::cout << "SERVER is shutdown" << std::endl;
+    this->data.clear();
+    this->userInput.clear();
+    *this->run = false;
 }
 
 void client_command_processor::InvalidCommand() {

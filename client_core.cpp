@@ -16,12 +16,8 @@ client_core::client_core(std::string ipAddress, int port) {
 }
 
 client_core::~client_core() {
-    std::cout << "Shutting down";
-    if (shutdown(this->sockt, SHUT_RD) < 0) {
-        std::cerr << "ERROR: shutdown" << std::endl;
-        close(this->sockt);
-        exit(EXIT_FAILURE);
-    }
+    std::cout << "Shutting down...\n";
+    close(this->sockt);
 }
 
 void client_core::Run() {
@@ -31,6 +27,8 @@ void client_core::Run() {
     while (this->running) {
     commandProcessor->Process();
     }
+
+    delete commandProcessor;
 };
 
 void client_core::ClientConnect() {

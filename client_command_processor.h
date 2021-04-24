@@ -44,6 +44,9 @@ private:
     void UserCommand();
     void AcctCommand();
     void PassCommand();
+    void DoneCommand();
+    void ShutDown();
+    void CdirCommand();
 
     void SplitString(std::vector<std::string> &vector, std::string inputString);
 
