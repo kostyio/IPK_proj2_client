@@ -35,6 +35,7 @@ void client_command_processor::Process() {
         case TYPE:
             break;
         case LIST:
+            this->ListCommand();
             break;
         case CDIR:
             this->CdirCommand();
@@ -251,6 +252,34 @@ void client_command_processor::CdirCommand() {
 
     }
 
+}
+
+void client_command_processor::ListCommand(){
+    std::string comm = this->userInput;
+    comm.erase(0, 5);
+
+    std::vector<std::string> vec;
+    this->SplitString(vec, comm);
+
+    if (vec.size() != 1 and vec.size() != 2) {
+        this->InvalidCommand();
+        return;
+    }
+
+    if(vec[0].compare("F") !=0 and vec[0].compare("V") != 0){
+        this->InvalidCommand();
+        return;
+    }
+    
+    comm.insert(0, "LIST ");
+    comm.push_back('\n');
+
+    if ((send(this->sockt, comm.data(), vec[0].size(), 0)) < 0) {
+        std::cerr << "ERROR: ListCommand" << std::endl;
+        close(this->sockt);
+        exit(EXIT_FAILURE);
+    }
+    
 }
 
 void client_command_processor::DoneCommand() {

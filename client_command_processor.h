@@ -47,6 +47,7 @@ private:
     void DoneCommand();
     void ShutDown();
     void CdirCommand();
+    void ListCommand();
 
     void SplitString(std::vector<std::string> &vector, std::string inputString);
 
