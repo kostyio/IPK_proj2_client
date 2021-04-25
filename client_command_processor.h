@@ -36,18 +36,26 @@ private:
     std::string data;
 
 
-
     int ParseCommand(std::string command);
 
     // commands
     void InvalidCommand();
+
     void UserCommand();
+
     void AcctCommand();
+
     void PassCommand();
+
     void DoneCommand();
+
     void ShutDown();
+
     void CdirCommand();
+
     void ListCommand();
+
+    void KillCommand();
 
     void SplitString(std::vector<std::string> &vector, std::string inputString);
 

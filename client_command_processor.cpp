@@ -3,7 +3,9 @@
 //
 
 #include <cstring>
+#include <algorithm>
 #include "client_command_processor.h"
+#include <stdio.h>
 
 client_command_processor::client_command_processor(int socket, bool *running) {
     this->sockt = socket;
@@ -41,6 +43,7 @@ void client_command_processor::Process() {
             this->CdirCommand();
             break;
         case KILL:
+            this->KillCommand();
             break;
         case NAME:
             break;
@@ -99,7 +102,7 @@ void client_command_processor::UserCommand() {
         }
         data.append(this->buffer);
     }
-    if (this->data.size() == 0){
+    if (this->data.size() == 0) {
         this->ShutDown();
     }
     this->data.append("\n");
@@ -146,7 +149,7 @@ void client_command_processor::AcctCommand() {
         }
         data.append(this->buffer);
     }
-    if (this->data.size() == 0){
+    if (this->data.size() == 0) {
         this->ShutDown();
     }
     this->data.append("\n");
@@ -193,7 +196,7 @@ void client_command_processor::PassCommand() {
         data.append(this->buffer);
     }
 
-    if (this->data.size() == 0){
+    if (this->data.size() == 0) {
         this->ShutDown();
     }
     this->data.append("\n");
@@ -239,22 +242,14 @@ void client_command_processor::CdirCommand() {
         }
         data.append(this->buffer);
     }
-    if (this->data.size() == 0){
+    if (this->data.size() == 0) {
         this->ShutDown();
     }
     this->data.append("\n");
     std::cout << this->data;
-    if (this->data.substr(0,1) == "!"){
-        return;
-    } else if (this->data.substr(0,1) == "+"){
-
-    } else if(this->data.substr(0,1) == "-"){
-
-    }
-
 }
 
-void client_command_processor::ListCommand(){
+void client_command_processor::ListCommand() {
     std::string comm = this->userInput;
     comm.erase(0, 5);
 
@@ -266,20 +261,88 @@ void client_command_processor::ListCommand(){
         return;
     }
 
-    if(vec[0].compare("F") !=0 and vec[0].compare("V") != 0){
+    if (vec[0].compare("F") != 0 and vec[0].compare("V") != 0) {
         this->InvalidCommand();
         return;
     }
-    
+
     comm.insert(0, "LIST ");
     comm.push_back('\n');
 
-    if ((send(this->sockt, comm.data(), vec[0].size(), 0)) < 0) {
+    if ((send(this->sockt, comm.data(), comm.size(), 0)) < 0) {
         std::cerr << "ERROR: ListCommand" << std::endl;
         close(this->sockt);
         exit(EXIT_FAILURE);
     }
-    
+
+    this->data.clear();
+    memset(this->buffer, 0, 1);
+    int received;
+
+    while ((received = recv(this->sockt, &this->buffer, 1, 0)) > 0) {
+        if (received < 0) {
+            std::cerr << "ERROR: receive" << std::endl;
+            close(this->sockt);
+            exit(EXIT_FAILURE);
+        }
+        if (*this->buffer == '\n') {
+            break;
+        }
+        data.append(this->buffer);
+    }
+    if (this->data.size() == 0) {
+        this->ShutDown();
+    }
+    std::replace(data.begin(), data.end(), '&', '\n');
+    this->data.append("\n");
+
+
+    std::cout << this->data;
+
+}
+
+void client_command_processor::KillCommand() {
+    std::string comm = this->userInput;
+    comm.erase(0, 5);
+
+    std::vector<std::string> vec;
+    this->SplitString(vec, comm);
+
+    if (vec.size() != 1) {
+        this->InvalidCommand();
+        return;
+    }
+
+    comm.insert(0, "LIST ");
+    comm.push_back('\n');
+
+    if ((send(this->sockt, comm.data(), comm.size(), 0)) < 0) {
+        std::cerr << "ERROR: ListCommand" << std::endl;
+        close(this->sockt);
+        exit(EXIT_FAILURE);
+    }
+
+    this->data.clear();
+    memset(this->buffer, 0, 1);
+    int received;
+
+    while ((received = recv(this->sockt, &this->buffer, 1, 0)) > 0) {
+        if (received < 0) {
+            std::cerr << "ERROR: receive" << std::endl;
+            close(this->sockt);
+            exit(EXIT_FAILURE);
+        }
+        if (*this->buffer == '\n') {
+            break;
+        }
+        data.append(this->buffer);
+    }
+    if (this->data.size() == 0){
+        this->ShutDown();
+    }
+
+    this->data.append("\n");
+    std::cout << this->data;
 }
 
 void client_command_processor::DoneCommand() {
